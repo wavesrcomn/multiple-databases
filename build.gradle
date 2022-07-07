@@ -25,10 +25,7 @@ subprojects {
         implementation (
                 "org.springframework:spring-context:$springVersion",
                 "org.springframework.data:spring-data-jdbc:$springDataJdbcVersion",
-                // for @PostConstruct annotation usage
-                "javax.annotation:javax.annotation-api:$javaxVersion",
                 "org.junit.jupiter:junit-jupiter-api:$junitVersion",
-                "org.junit.jupiter:junit-jupiter-params:$junitVersion",
                 "org.junit.platform:junit-platform-engine:$junitEngineVersion",
                 "org.postgresql:postgresql:$postgresqlVersion"
         )
