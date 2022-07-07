@@ -1,0 +1,4 @@
+dependencies {
+    api project(":first-db-client")
+    api project(":second-db-client")
+}

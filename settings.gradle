@@ -1,0 +1,5 @@
+rootProject.name = 'multiple-databases'
+include 'first-db-client'
+include 'second-db-client'
+include 'tests'
+
