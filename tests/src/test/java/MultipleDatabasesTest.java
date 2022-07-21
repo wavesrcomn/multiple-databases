@@ -17,6 +17,7 @@ class MultipleDatabasesTest {
     @Autowired
     SecondDBEntityRepository secondDBEntityRepository;
 
+
     @Test
     void test() {
         firstDBEntityRepository.findAll();
