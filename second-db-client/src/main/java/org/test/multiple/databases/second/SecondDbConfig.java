@@ -5,34 +5,32 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.jdbc.core.convert.*;
-import org.springframework.data.jdbc.core.dialect.JdbcArrayColumns;
-import org.springframework.data.jdbc.core.dialect.JdbcDialect;
 import org.springframework.data.jdbc.core.mapping.JdbcMappingContext;
-import org.springframework.data.jdbc.repository.config.AbstractJdbcConfiguration;
-import org.springframework.data.jdbc.repository.config.DialectResolver;
 import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
 import org.springframework.data.relational.core.dialect.Dialect;
+import org.springframework.data.relational.core.dialect.PostgresDialect;
+import org.springframework.data.relational.core.mapping.NamingStrategy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.transaction.TransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.util.Optional;
 
-@Configuration
-@EnableJdbcRepositories(jdbcOperationsRef = "firstNamedParameterJdbcOperations",
-        transactionManagerRef = "secondTransactionManager",
+@Configuration(proxyBeanMethods = false)
+@EnableJdbcRepositories(jdbcOperationsRef = "secondNamedParameterJdbcOperations",
         basePackages = "org.test.multiple.databases.second")
-public class SecondDbConfig extends AbstractJdbcConfiguration {
+public class SecondDbConfig {
     @Bean
     @Second
     DataSource secondDataSource() {
         PGSimpleDataSource source = new PGSimpleDataSource();
-        source.setServerNames(new String[] { "xxx.xxx.x.x" });
+        source.setServerNames(new String[] { "192.168.7.1" });
         source.setPortNumbers(new int[] { 5433 });
-        source.setDatabaseName("second");
-        source.setUser("user");
-        source.setPassword("password");
+        source.setDatabaseName("refill");
+        source.setUser("postgres");
+        source.setPassword("postgres");
         return source;
     }
 
@@ -42,41 +40,46 @@ public class SecondDbConfig extends AbstractJdbcConfiguration {
         return new NamedParameterJdbcTemplate(dataSource);
     }
 
-    @Override
     @Bean
     @Second
-    public DataAccessStrategy dataAccessStrategyBean(@Second NamedParameterJdbcOperations operations, JdbcConverter jdbcConverter,
-                                                     JdbcMappingContext context, Dialect dialect) {
-        return new DefaultDataAccessStrategy(new SqlGeneratorSource(context, jdbcConverter, dialect), context,
-                jdbcConverter, operations, new SqlParametersFactory(context, jdbcConverter, dialect),
-                new InsertStrategyFactory(operations, new BatchJdbcOperations(operations.getJdbcOperations()), dialect));
+    public PlatformTransactionManager secondTransactionManager(@Second final DataSource dataSource) {
+        return new DataSourceTransactionManager(dataSource);
     }
 
-    @Override
+    @Bean
+    public JdbcCustomConversions jdbcCustomConversions() {
+        return new JdbcCustomConversions();
+    }
+
+    @Bean
+    public Dialect jdbcDialect() {
+        return PostgresDialect.INSTANCE;
+    }
+
+    @Bean
+    public JdbcMappingContext jdbcMappingContext(Optional<NamingStrategy> namingStrategy, JdbcCustomConversions customConversions) {
+        JdbcMappingContext mappingContext = new JdbcMappingContext((NamingStrategy)namingStrategy.orElse(NamingStrategy.INSTANCE));
+        mappingContext.setSimpleTypeHolder(customConversions.getSimpleTypeHolder());
+        return mappingContext;
+    }
+
+    //
     @Bean
     @Second
-    public JdbcConverter jdbcConverter(JdbcMappingContext mappingContext, @Second NamedParameterJdbcOperations operations,
-                                       @Lazy RelationResolver relationResolver, JdbcCustomConversions conversions, Dialect dialect) {
+    public JdbcConverter jdbcConverter(JdbcMappingContext mappingContext,
+                                       @Second NamedParameterJdbcOperations operations,
+                                       @Lazy RelationResolver relationResolver,
+                                       JdbcCustomConversions conversions,
+                                       Dialect dialect) {
 
-        JdbcArrayColumns arrayColumns = dialect instanceof JdbcDialect ? ((JdbcDialect) dialect).getArraySupport()
-                : JdbcArrayColumns.DefaultSupport.INSTANCE;
-        DefaultJdbcTypeFactory jdbcTypeFactory = new DefaultJdbcTypeFactory(operations.getJdbcOperations(), arrayColumns);
-
+        DefaultJdbcTypeFactory jdbcTypeFactory = new DefaultJdbcTypeFactory(operations.getJdbcOperations());
         return new BasicJdbcConverter(mappingContext, relationResolver, conversions, jdbcTypeFactory,
                 dialect.getIdentifierProcessing());
     }
 
-    @Override
     @Bean
     @Second
-    public Dialect jdbcDialect(@Second NamedParameterJdbcOperations operations) {
-        return DialectResolver.getDialect(operations.getJdbcOperations());
-    }
-
-    @Bean
-    @Second
-    TransactionManager secondTransactionManager(@Second DataSource dataSource) {
+    public PlatformTransactionManager transactionManager(@Second final DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);
     }
-
 }

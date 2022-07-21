@@ -5,34 +5,31 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.jdbc.core.convert.*;
-import org.springframework.data.jdbc.core.dialect.JdbcArrayColumns;
-import org.springframework.data.jdbc.core.dialect.JdbcDialect;
 import org.springframework.data.jdbc.core.mapping.JdbcMappingContext;
-import org.springframework.data.jdbc.repository.config.AbstractJdbcConfiguration;
-import org.springframework.data.jdbc.repository.config.DialectResolver;
 import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
 import org.springframework.data.relational.core.dialect.Dialect;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionManager;
 
 import javax.sql.DataSource;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableJdbcRepositories(jdbcOperationsRef = "firstNamedParameterJdbcOperations",
         transactionManagerRef = "firstTransactionManager",
         basePackages = "org.test.multiple.databases.first")
-public class FirstDbConfig extends AbstractJdbcConfiguration {
+public class FirstDbConfig {
     @Bean
     @First
     DataSource firstDataSource() {
         PGSimpleDataSource source = new PGSimpleDataSource();
-        source.setServerNames(new String[] { "xxx.xxx.x.x" });
+        source.setServerNames(new String[] { "192.168.7.1" });
         source.setPortNumbers(new int[] { 5434 });
-        source.setDatabaseName("fist");
-        source.setUser("user");
-        source.setPassword("password");
+        source.setDatabaseName("accounting");
+        source.setUser("postgres");
+        source.setPassword("postgres");
         return source;
     }
 
@@ -42,40 +39,45 @@ public class FirstDbConfig extends AbstractJdbcConfiguration {
         return new NamedParameterJdbcTemplate(dataSource);
     }
 
-    @Override
     @Bean
     @First
-    public DataAccessStrategy dataAccessStrategyBean(@First NamedParameterJdbcOperations operations, JdbcConverter jdbcConverter,
-                                                     JdbcMappingContext context, Dialect dialect) {
-        return new DefaultDataAccessStrategy(new SqlGeneratorSource(context, jdbcConverter, dialect), context,
-                jdbcConverter, operations, new SqlParametersFactory(context, jdbcConverter, dialect),
-                new InsertStrategyFactory(operations, new BatchJdbcOperations(operations.getJdbcOperations()), dialect));
+    TransactionManager firstTransactionManager(@First DataSource dataSource) {
+        return new DataSourceTransactionManager(dataSource);
     }
+//    @Bean
+//    public JdbcCustomConversions jdbcCustomConversions() {
+//        return new JdbcCustomConversions();
+//    }
+//
+//    @Bean
+//    public Dialect jdbcDialect() {
+//        return PostgresDialect.INSTANCE;
+//    }
+//
+//    @Bean
+//    public JdbcMappingContext jdbcMappingContext(Optional<NamingStrategy> namingStrategy, JdbcCustomConversions customConversions) {
+//        JdbcMappingContext mappingContext = new JdbcMappingContext((NamingStrategy)namingStrategy.orElse(NamingStrategy.INSTANCE));
+//        mappingContext.setSimpleTypeHolder(customConversions.getSimpleTypeHolder());
+//        return mappingContext;
+//    }
 
-    @Override
+    //
     @Bean
     @First
-    public JdbcConverter jdbcConverter(JdbcMappingContext mappingContext, @First NamedParameterJdbcOperations operations,
-                                       @Lazy RelationResolver relationResolver, JdbcCustomConversions conversions, Dialect dialect) {
+    public JdbcConverter jdbcConverter(JdbcMappingContext mappingContext,
+                                       @First NamedParameterJdbcOperations operations,
+                                       @Lazy RelationResolver relationResolver,
+                                       JdbcCustomConversions conversions,
+                                       Dialect dialect) {
 
-        JdbcArrayColumns arrayColumns = dialect instanceof JdbcDialect ? ((JdbcDialect) dialect).getArraySupport()
-                : JdbcArrayColumns.DefaultSupport.INSTANCE;
-        DefaultJdbcTypeFactory jdbcTypeFactory = new DefaultJdbcTypeFactory(operations.getJdbcOperations(), arrayColumns);
-
+        DefaultJdbcTypeFactory jdbcTypeFactory = new DefaultJdbcTypeFactory(operations.getJdbcOperations());
         return new BasicJdbcConverter(mappingContext, relationResolver, conversions, jdbcTypeFactory,
                 dialect.getIdentifierProcessing());
     }
 
-    @Override
     @Bean
     @First
-    public Dialect jdbcDialect(@First NamedParameterJdbcOperations operations) {
-        return DialectResolver.getDialect(operations.getJdbcOperations());
-    }
-
-    @Bean
-    @First
-    TransactionManager firstTransactionManager(@First DataSource dataSource) {
+    public PlatformTransactionManager transactionManager(@First final DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);
     }
 }

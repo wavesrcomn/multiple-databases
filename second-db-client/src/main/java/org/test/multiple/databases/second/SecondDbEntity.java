@@ -12,10 +12,20 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Data
-@Table("")
+@Table("gates")
 @Accessors(chain = true)
 @Builder(toBuilder = true)
 @FieldNameConstants
 public class SecondDbEntity {
-    //fields
+    @Column("gate_id")
+    @Id
+    UUID gateId;
+    @Column("gate_name")
+    String gateName;
+    @Column("gate_type")
+    String gateType;
+    @Column("gate_url")
+    String gateUrl;
+    Instant created;
+    Instant deleted;
 }

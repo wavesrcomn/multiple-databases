@@ -22,11 +22,14 @@ subprojects {
     dependencies {
         compileOnly ("org.projectlombok:lombok:$lombokVersion")
         implementation (
-                "org.springframework:spring-context:$springVersion",
-                "org.springframework.data:spring-data-jdbc:$springDataJdbcVersion",
+//                "org.springframework:spring-context:$springVersion",
+//                "org.springframework.data:spring-data-jdbc:$springDataJdbcVersion",
                 "org.junit.jupiter:junit-jupiter-api:$junitVersion",
                 "org.junit.platform:junit-platform-engine:$junitEngineVersion",
-                "org.postgresql:postgresql:$postgresqlVersion"
+                "org.postgresql:postgresql:$postgresqlVersion",
+                "org.springframework.boot:spring-boot-starter-actuator:2.7.1",
+                "org.springframework.boot:spring-boot-starter-data-jdbc:2.4.2",
+                "org.springframework.boot:spring-boot-starter-test:2.7.1"
         )
         testImplementation (
                 "org.springframework:spring-test:$springVersion",
